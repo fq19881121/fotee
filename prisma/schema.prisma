@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  image     String?
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Project {
+  id          String       @id @default(cuid())
+  ownerId     String
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String       @unique
+  source      String?
+  status      DeployStatus @default(QUEUED)
+  zipKey      String
+  publicUrl   String?
+  deployments Deployment[]
+  events      AnalyticsEvent[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Deployment {
+  id        String       @id @default(cuid())
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status    DeployStatus @default(QUEUED)
+  checks    Json
+  startedAt DateTime     @default(now())
+  endedAt   DateTime?
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String
+  country   String?
+  device    String?
+  referrer  String?
+  path      String
+  createdAt DateTime @default(now())
+}
+
+enum DeployStatus {
+  QUEUED
+  SCANNING
+  DEPLOYING
+  LIVE
+  FAILED
+}
